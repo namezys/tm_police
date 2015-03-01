@@ -16,5 +16,9 @@
 	{
 		"module": "disable",
 		"args": { "path": "~/Downloads" }
+	},
+	{
+		"module": "control",
+		"args": { "path": "~" }
 	}
 ]

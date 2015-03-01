@@ -6,14 +6,19 @@ Created on Mar 1, 2015
 Set of Time Machine polices
 '''
 
+import json
 import os
 from tm_police.ctrl import disable_tm
 from tm_police.ctrl import enable_tm
 from tm_police.ctrl import find_tm_disabled_parent
 
 from logging import getLogger
+from matplotlib.font_manager import path
 
 logger = getLogger()
+
+TM_POLICE_FILE = ".tm_police"
+TM_POLICE_JSON = ".tm_police.json"
 
 
 class BasePolice(object):
@@ -66,10 +71,57 @@ class Disable(BasePolice):
         disable_tm(self.path)
 
 
+def _update_args(args, path):
+    def _r_path(key, value, path):
+        if 'path' in key and (not value or value[0] != '/'):
+            value = os.path.join(path)
+        return key, value
+    return dict(_r_path(k, v, path) for k, v in args.items())
+
+
+class DirControl(BasePolice):
+    """Search TM police in child directories"""
+
+    def _work_on_path(self, path):
+        logger.debug("Check %s", path)
+        police_file = os.path.join(path, TM_POLICE_FILE)
+        police_json = os.path.join(path, TM_POLICE_JSON)
+        if os.path.exists(police_file):
+            logger.info("Found TM police %s", police_file)
+            if os.path.exists(police_json):
+                logger.error("Found %s and %s simultaneously",
+                             police_file, police_json)
+                return
+            module = open(police_file).read().strip()
+            logger.info("Use TM police module %s", module)
+            args = {'path': path}
+        elif os.path.exists(police_json):
+            logger.info("Found TM police JSON", police_json)
+            cfg = json.load(open(police_json))
+            logger.debug("Update args")
+            args = _update_args(cfg["args"], path)
+            module = cfg["module"]
+            logger.debug("Found module %s", module)
+        else:
+            logger.debug("TM police file not found. Skip %s", path)
+            return
+        logger.debug("Create module and execute it")
+        get_module(module)(**args).work()
+
+    def work(self):
+        logger.debug("Search tm police for child dirs of %s", self.path)
+        for name in os.listdir(self.path):
+            path = os.path.join(self.path, name)
+            if not os.path.isdir(path):
+                continue
+            self._work_on_path(os.path.abspath(path))
+
+
 MODULES = {
     'list': ListPolice,
     'enable': Enable,
     'disable': Disable,
+    'control': DirControl
 }
 
 
