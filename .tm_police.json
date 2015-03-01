@@ -1,0 +1,20 @@
+[
+	{
+		"module": "list",
+		"args": {
+			"path": "/Applications",
+			"file_path": "~/.time_machine/Applications.global_list"
+		}
+	},
+	{
+		"module": "list",
+		"args": {
+			"path": "~/Applications",
+			"file_path": "~/.time_machine/Applications.list"
+		}
+	},
+	{
+		"module": "disable",
+		"args": { "path": "~/Downloads" }
+	}
+]
